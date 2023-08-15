@@ -4,14 +4,8 @@ import { Button, Input } from "@fluentui/react-components";
 import { BaseDashboard } from "@microsoft/teamsfx-react";
 
 import { generate } from "../services/generate";
-import { CodeCard } from "../widgets/CodeCard";
 import { Send20Regular } from "@fluentui/react-icons";
-import {
-  CopilotProvider,
-  LatencyWrapper,
-  LatencyLoader,
-  LatencyCancel,
-} from "@fluentai/react-copilot";
+import { queryDB } from "../services/sqlQuery";
 
 interface CodeBlock {
   name: string;
@@ -28,39 +22,23 @@ export default class MyDashboard extends BaseDashboard<any, MyDashboardState> {
   override layout(): JSX.Element | undefined {
     return (
       <>
-        {this.state.onloading ? (
-          <div className="generating-style">
-            <CopilotProvider>
-              <LatencyWrapper className="wrapper">
-                <LatencyLoader header={"Generating widget files..."} />
-                <LatencyCancel>Stop generating</LatencyCancel>
-              </LatencyWrapper>
-            </CopilotProvider>
+        <div className="ask-style">
+          <div>
+            <Input
+              root="ask-input"
+              size="large"
+              placeholder="Describe the requirements for generating widget"
+              value={this.state.inputValue}
+              onChange={(e) => this.setState({ inputValue: e.target.value })}
+            />
+            <Button
+              onClick={() => this.queryDB()}
+              size="large"
+              icon={<Send20Regular />}
+              title="Generate"
+            />
           </div>
-        ) : (
-          <div className="ask-style">
-            <div>
-              <Input
-                root="ask-input"
-                size="large"
-                placeholder="Describe the requirements for generating widget"
-                value={this.state.inputValue}
-                onChange={(e) => this.setState({ inputValue: e.target.value })}
-              />
-              <Button
-                onClick={() => this.askAI()}
-                size="large"
-                icon={<Send20Regular />}
-                title="Generate"
-              />
-            </div>
-          </div>
-        )}
-
-        {this.state.codeContents &&
-          this.state.codeContents.map((codeBlock) => {
-            return <CodeCard content={codeBlock} />;
-          })}
+        </div>
       </>
     );
   }
@@ -84,5 +62,9 @@ export default class MyDashboard extends BaseDashboard<any, MyDashboardState> {
     } finally {
       this.setState({ onloading: false });
     }
+  }
+
+  private async queryDB() {
+    await queryDB();
   }
 }
