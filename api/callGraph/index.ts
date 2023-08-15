@@ -133,8 +133,8 @@ async function handleRequest(
       return { generated: generated };
     }
     case "queryDB:GET": {
-      await queryDB();
-      return { queryResult: "done" };
+      const dbData = await queryDB();
+      return { queryResult: dbData };
     }
     // If no matching graphType and method combination is found
     default: {
@@ -213,28 +213,26 @@ async function queryDB() {
   try {
     var poolConnection = await require("mssql").connect(sqlConfig);
     console.log("Reading rows from the Table...");
-    var resultSet = await poolConnection.request().query(`SELECT TOP 20 pc.Name as CategoryName,
-            p.name as ProductName 
-            FROM [SalesLT].[ProductCategory] pc
-            JOIN [SalesLT].[Product] p ON pc.productcategoryid = p.productcategoryid`);
+    var resultSet = await poolConnection.request().query(`
+        SELECT Top 10 ProductId, count(*) as SaleCount
+        FROM [SalesLT].[SalesOrderDetail]
+        GROUP BY ProductI`);
 
     console.log(`${resultSet.recordset.length} rows returned.`);
-
-    // output column headers
-    var columns = "";
-    for (var column in resultSet.recordset.columns) {
-      columns += column + ", ";
-    }
-    console.log("%s\t", columns.substring(0, columns.length - 2));
-
-    // ouput row contents from default record set
-    resultSet.recordset.forEach((row) => {
-      console.log("%s\t%s", row.CategoryName, row.ProductName);
-    });
+    return extractResultSet(resultSet);
 
     // close connection only when we're certain application is finished
     poolConnection.close();
   } catch (err) {
     console.error(err);
   }
+}
+
+// write a function to extract sql query result set to json array in which each element is a json object, each object is a row in the result set, each property is a column in the result set
+function extractResultSet(resultSet: any): any[] {
+  const result: any[] = [];
+  resultSet.recordset.forEach((row) => {
+    result.push(row);
+  });
+  return result;
 }
