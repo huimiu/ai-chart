@@ -216,7 +216,7 @@ async function queryDB() {
     var resultSet = await poolConnection.request().query(`
         SELECT Top 10 ProductId, count(*) as SaleCount
         FROM [SalesLT].[SalesOrderDetail]
-        GROUP BY ProductI`);
+        GROUP BY ProductId`);
 
     console.log(`${resultSet.recordset.length} rows returned.`);
     return extractResultSet(resultSet);
