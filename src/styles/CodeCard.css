@@ -1,0 +1,7 @@
+.code-card-root {
+  height: 400px;
+}
+
+.code-card-body {
+  overflow-x: hidden;
+}
