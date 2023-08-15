@@ -126,15 +126,20 @@ async function handleRequest(
 ): Promise<any> {
   // Switch statement to handle different graphType and method combinations
   switch (`${graphType}:${method}`) {
-    // If graphType is "generate" and method is "POST"
-    case "generate:POST": {
-      // Call getChatMessages function to get chat messages
-      const generated = await callOAI(reqData.question);
-      return { generated: generated };
-    }
-    case "queryDB:GET": {
-      const dbData = await queryDB();
-      return { queryResult: dbData };
+    case "queryDB:POST": {
+      if (reqData && reqData.question) {
+        const aiResponse = await callOAI(reqData.question);
+        const sqlContext = JSON.parse(aiResponse);
+        return { queryResult: await queryDB(sqlContext.sql), x: sqlContext.x, y: sqlContext.y };
+      } else {
+        return {
+          queryResult: await queryDB(
+            "SELECT Top 10 ProductID, sum(OrderQty) as SaleCount FROM [SalesLT].[SalesOrderDetail] GROUP BY ProductID",
+          ),
+          x: "ProductID",
+          y: "SaleCount",
+        };
+      }
     }
     // If no matching graphType and method combination is found
     default: {
@@ -149,16 +154,34 @@ async function callOAI(body: string) {
       messages: [
         {
           content:
-            "You are a seasoned front-end developer with expertise in using the Teams Toolkit to develop Teams Apps, and you are also proficient in UX design, you can write css to make the front end more beautiful and the interaction more humanized. Currently, there is a requirement to add a widget to a Dashboard Tab App, and your assistance is needed to complete this task. Your mission is to create elegant TypeScript (ts), TypeScript React (tsx), and CSS code that aligns with user needs, leveraging your expertise in developing Teams Dashboard Tab Apps.\n\n## Goal\nAnalyze and disassemble the user's needs, and provide the definition of widgets, css, and related models and services.\n\n## Definition\n\t- Widgets are components that can be added to a dashboard page to show different types of information or functionality. Widgets can be customized and arranged to create interactive and dynamic dashboard pages for various purposes.\n\t- The @microsoft/teamsfx-react package provides a BaseWidget class that simplifies the creation of a widget. Developers can customize the widget by overriding methods from BaseWidget, such as getData, header, body, footer, loading and styling methods.\n\n## Constrains\n\t- Ensure that the code is free of syntax and compilation errors.\n\t- Design and implement based on user input, do not ask other information.\n\t- Use class components in React to define the widget and the widget class needs to inherit the BaseWidget in @microsoft/teamsfx-react.\n\t- Use the Fluent UI V9 framework to implement the widget, use @fluentui/react-icons to show some icons if needed.\nDo not import components and icons that do not exist.",
+            "You are a senior sql engineer, you are good at generating suitable and accurate sql statements based on the user's description. Now there is a requirement to generate sql statements, your mission is to complete this sql generation requirement.\n\n## Goal\nAnalyze and disassemble the user's needs, and provide accurate sql statements and related information.\n\n## Table Definition\n\t- The [SalesLT].[SalesOrderDetail] table is a sample table that contains information about the sales order details of a fictitious company called Adventure Works.\n\n## Column Definition\n\t- SalesOrderID: The unique identifier of the sales order header that this detail belongs to.\n\t- SalesOrderDetailID: The unique identifier of the sales order detail.\n\t- OrderQty: The quantity ordered for this product.\n\t- ProductID: The identifier of the product that was ordered.\n\t- UnitPrice: The selling price of a single unit of the product.\n\t- UnitPriceDiscount: The discount amount applied to the unit price, if any.\n\t- LineTotal: The total amount for this line item, calculated as OrderQty * (UnitPrice - UnitPriceDiscount).\n\t- rowguid: A globally unique identifier for the row.\n\t- ModifiedDate: The date and time when the row was last updated. The values are from January to June 2023, accurate to the day.\n\n## Constrains\n\t- Ensure that the code is free of syntax errors.\nGenerate based on user input, do not ask other information.",
           role: "system",
         },
         {
-          content: "Implement a list widget.",
+          content: "Show top 20 product sales.",
           role: "user",
         },
         {
           content:
-            '[\n  {\n    "name": "ListWidget.tsx",\n    "code": "// ListWidget.tsx\\nimport \\"../styles/ListWidget.css\\";\\nimport { Button, Text } from \\"@fluentui/react-components\\";\\nimport { List28Filled, MoreHorizontal32Regular } from \\"@fluentui/react-icons\\";\\nimport { BaseWidget } from \\"@microsoft/teamsfx-react\\";\\nimport { ListModel } from \\"../models/listModel\\";\\nimport { getListData } from \\"../services/listService\\";\\ninterface IListWidgetState {\\n  data: ListModel[];\\n}\\nexport default class ListWidget extends BaseWidget<any, IListWidgetState> {\\n  async getData(): Promise<IListWidgetState> {\\n    return { data: getListData() };\\n  }\\n  header(): JSX.Element | undefined {\\n    return (\\n      <div>\\n        <List28Filled />\\n        <Text>Your List</Text>\\n        <Button icon={<MoreHorizontal32Regular />} appearance=\\"transparent\\" />\\n      </div>\\n    );\\n  }\\n  body(): JSX.Element | undefined {\\n    return (\\n      <div className=\\"list-body\\">\\n        {this.state.data?.map((t: ListModel) => {\\n          return (\\n            <div key={`${t.id}-div`}>\\n              <div className=\\"divider\\" />\\n              <Text className=\\"title\\">{t.title}</Text>\\n              <Text className=\\"content\\">{t.content}</Text>\\n            </div>\\n          );\\n        })}\\n      </div>\\n    );\\n  }\\n  footer(): JSX.Element | undefined {\\n    return <Button appearance=\\"primary\\">View Details</Button>;\\n  }\\n}"\n  },\n  {\n    "name": "ListWidget.css",\n    "code": ".list-body {\\n  display: grid;\\n  row-gap: var(--spacingVerticalS);\\n  align-content: start;\\n  min-width: 13.5rem;\\n}\\n.list-body div {\\n  display: grid;\\n}\\n.list-body .divider {\\n  margin: 0 -2rem 0.5rem;\\n  height: var(--strokeWidthThin);\\n  background: var(--colorNeutralStroke2);\\n}\\n.list-body .title {\\n  font-weight: var(--fontWeightSemibold);\\n}\\n.list-body .content {\\n  font-size: var(--fontSizeBase200);\\n}\\n.loading {\\n  display: grid;\\n  justify-content: center;\\n  height: 100%;\\n}\\n"\n  },\n  {\n    "name": "listModel.ts",\n    "code": "export interface ListModel {\\n  id: string;\\n  title: string;\\n  content: string;\\n}"\n  },\n  {\n    "name": "listService.ts",\n    "code": "import { ListModel } from \\"../models/listModel\\";\\n/**\\n * Retrive sample data\\n * @returns data for list widget\\n */\\nexport const getListData = (): ListModel[] => [\\n  {\\n    id: \\"id1\\",\\n    title: \\"Lorem ipsum\\",\\n    content: \\"Lorem ipsum dolor sit amet\\",\\n  },\\n  {\\n    id: \\"id2\\",\\n    title: \\"Lorem ipsum\\",\\n    content: \\"Lorem ipsum dolor sit amet\\",\\n  },\\n  {\\n    id: \\"id3\\",\\n    title: \\"Lorem ipsum\\",\\n    content: \\"Lorem ipsum dolor sit amet\\",\\n  },\\n];"\n  }\n]',
+            '{\n  "sql": "SELECT Top 20 ProductID, sum(OrderQty) as SaleCount FROM [SalesLT].[SalesOrderDetail] GROUP BY ProductId",\n  "x": "ProductID",\n  "y": "SaleCount"\n}',
+          role: "assistant",
+        },
+        {
+          content: "Display the sales amount of the top 10 products.",
+          role: "user",
+        },
+        {
+          content:
+            '{\n  "sql": "SELECT Top 20 ProductID, sum(LineTotal) as SaleAmount FROM [SalesLT].[SalesOrderDetail] GROUP BY ProductID",\n  "x": "ProductID",\n  "y": "SaleAmount"\n}',
+          role: "assistant",
+        },
+        {
+          content: "Statistics of the top 10 sales volume of each product in April.",
+          role: "user",
+        },
+        {
+          content:
+            '{\n  "sql": "SELECT ProductID, SUM(OrderQty) AS SalesQuantity FROM [SalesLT].[SalesOrderDetail] WHERE ModifiedDate BETWEEN \'2023-04-01\' AND \'2023-04-30\' GROUP BY ProductID",\n  "x": "ProductID",\n  "y": "SalesQuantity"\n}',
           role: "assistant",
         },
         {
@@ -199,7 +222,7 @@ async function callOAI(body: string) {
   }
 }
 
-async function queryDB() {
+async function queryDB(sqlStr: string) {
   const sqlConfig = {
     user: process.env.SQL_USER,
     password: process.env.SQL_PASSWORD,
@@ -213,10 +236,7 @@ async function queryDB() {
   try {
     var poolConnection = await require("mssql").connect(sqlConfig);
     console.log("Reading rows from the Table...");
-    var resultSet = await poolConnection.request().query(`
-        SELECT Top 10 ProductId, count(*) as SaleCount
-        FROM [SalesLT].[SalesOrderDetail]
-        GROUP BY ProductId`);
+    var resultSet = await poolConnection.request().query(sqlStr);
 
     console.log(`${resultSet.recordset.length} rows returned.`);
     return extractResultSet(resultSet);
