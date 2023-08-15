@@ -5,7 +5,6 @@
 
 // Import polyfills for fetch required by msgraph-sdk-javascript.
 import "isomorphic-fetch";
-import mssql from "mssql";
 
 import { Context, HttpRequest } from "@azure/functions";
 import {
@@ -212,7 +211,7 @@ async function queryDB() {
     },
   };
   try {
-    var poolConnection = await mssql.connect(sqlConfig);
+    var poolConnection = await require("mssql").connect(sqlConfig);
     console.log("Reading rows from the Table...");
     var resultSet = await poolConnection.request().query(`SELECT TOP 20 pc.Name as CategoryName,
             p.name as ProductName 

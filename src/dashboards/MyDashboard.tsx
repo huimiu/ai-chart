@@ -3,22 +3,12 @@ import "../styles/MyDashboard.css";
 import { Button, Input } from "@fluentui/react-components";
 import { BaseDashboard } from "@microsoft/teamsfx-react";
 
-import { generate } from "../services/generate";
 import { Send20Regular } from "@fluentui/react-icons";
+import { generate } from "../services/generate";
 import { queryDB } from "../services/sqlQuery";
+import ChartWidget from "../widgets/ChartWidget";
 
-interface CodeBlock {
-  name: string;
-  code: string;
-}
-
-interface MyDashboardState {
-  codeContents: CodeBlock[];
-  onloading: boolean;
-  inputValue: string;
-}
-
-export default class MyDashboard extends BaseDashboard<any, MyDashboardState> {
+export default class MyDashboard extends BaseDashboard<any, any> {
   override layout(): JSX.Element | undefined {
     return (
       <>
@@ -39,6 +29,7 @@ export default class MyDashboard extends BaseDashboard<any, MyDashboardState> {
             />
           </div>
         </div>
+        <ChartWidget />
       </>
     );
   }
