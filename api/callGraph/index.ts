@@ -39,7 +39,7 @@ type TeamsfxContext = { [key: string]: any };
 export default async function run(
   context: Context,
   req: HttpRequest,
-  teamsfxContext: TeamsfxContext,
+  teamsfxContext: TeamsfxContext
 ): Promise<Response> {
   context.log("HTTP trigger function processed a request.");
 
@@ -94,7 +94,12 @@ export default async function run(
 
   try {
     // Call the appropriate function based on the graphType and method.
-    const result = await handleRequest(oboCredential, graphType, method, reqData);
+    const result = await handleRequest(
+      oboCredential,
+      graphType,
+      method,
+      reqData
+    );
     res.body = { ...res.body, ...result };
   } catch (e) {
     context.log.error(e);
@@ -122,24 +127,27 @@ async function handleRequest(
   oboCredential: OnBehalfOfUserCredential,
   graphType: string,
   method: string,
-  reqData: any,
+  reqData: any
 ): Promise<any> {
   // Switch statement to handle different graphType and method combinations
   switch (`${graphType}:${method}`) {
-    case "queryDB:POST": {
-      if (reqData && reqData.question) {
-        const aiResponse = await callOAI(reqData.question);
-        const sqlContext = JSON.parse(aiResponse);
-        return { queryResult: await queryDB(sqlContext.sql), x: sqlContext.x, y: sqlContext.y };
-      } else {
-        return {
-          queryResult: await queryDB(
-            "SELECT Top 10 ProductID, sum(OrderQty) as SaleCount FROM [SalesLT].[SalesOrderDetail] GROUP BY ProductID",
-          ),
-          x: "ProductID",
-          y: "SaleCount",
-        };
-      }
+    case "queryDB:GET": {
+      return {
+        queryResult: await queryDB(
+          "SELECT Top 10 ProductID, sum(OrderQty) as SaleCount FROM [SalesLT].[SalesOrderDetail] GROUP BY ProductID"
+        ),
+        x: "ProductID",
+        y: "SaleCount",
+      };
+    }
+    case "aiPower:POST": {
+      const aiResponse = await callOAI(reqData.question);
+      const sqlContext = JSON.parse(aiResponse);
+      return {
+        queryResult: await queryDB(sqlContext.sql),
+        x: sqlContext.x,
+        y: sqlContext.y,
+      };
     }
     // If no matching graphType and method combination is found
     default: {
@@ -176,7 +184,8 @@ async function callOAI(body: string) {
           role: "assistant",
         },
         {
-          content: "Statistics of the top 10 sales volume of each product in April.",
+          content:
+            "Statistics of the top 10 sales volume of each product in April.",
           role: "user",
         },
         {
@@ -194,15 +203,15 @@ async function callOAI(body: string) {
     const authProvider = new ApiKeyProvider(
       "api-key",
       process.env.TEAMSFX_API_OAI_API_KEY,
-      ApiKeyLocation.Header,
+      ApiKeyLocation.Header
     );
     const apiClient: AxiosInstance = createApiClient(
       process.env.TEAMSFX_API_OAI_ENDPOINT,
-      authProvider,
+      authProvider
     );
     const resp = await apiClient.post(
       "/chat/completions?api-version=2023-07-01-preview",
-      completionReq,
+      completionReq
     );
     if (resp.status !== 200) {
       return {
@@ -240,11 +249,11 @@ async function queryDB(sqlStr: string) {
 
     console.log(`${resultSet.recordset.length} rows returned.`);
     return extractResultSet(resultSet);
-
-    // close connection only when we're certain application is finished
-    poolConnection.close();
   } catch (err) {
     console.error(err);
+  } finally {
+    // release resources
+    poolConnection.close();
   }
 }
 

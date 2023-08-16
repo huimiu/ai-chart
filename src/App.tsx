@@ -1,7 +1,12 @@
 import "./App.css";
 
 import { useEffect } from "react";
-import { HashRouter as Router, Navigate, Route, Routes } from "react-router-dom";
+import {
+  HashRouter as Router,
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
 
 import {
   FluentProvider,
