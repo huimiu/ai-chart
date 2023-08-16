@@ -28,6 +28,7 @@ export async function aiPower(q?: string): Promise<any> {
       data: respData["queryResult"],
       xKey: respData["x"],
       yKey: respData["y"],
+      sqlString: respData["sqlString"],
     };
   } catch (e) {
     console.error(e);

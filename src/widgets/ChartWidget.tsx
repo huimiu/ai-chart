@@ -1,3 +1,5 @@
+import "../styles/ChartWidget.css";
+
 import {
   Bar,
   BarChart,
@@ -9,18 +11,26 @@ import {
   YAxis,
 } from "recharts";
 
+import {
+  CopilotProvider,
+  LatencyCancel,
+  LatencyLoader,
+  LatencyWrapper,
+  useCopilotMode,
+} from "@fluentai/react-copilot";
+
+import { Textarea } from "@fluentai/react-copilot";
 import { BaseWidget } from "@microsoft/teamsfx-react";
 
-import { Button, Input } from "@fluentui/react-components";
-import { Send20Regular } from "@fluentui/react-icons";
 import { aiPower, queryDB } from "../services/chartService";
-import { Textarea } from "@fluentai/react-copilot";
 
 interface ChartWidgetState {
   onloading: boolean;
   data?: any[];
   xKey?: string;
   yKey?: string;
+  questionValue?: string;
+  sqlString?: string;
 }
 
 export default class ChartWidget extends BaseWidget<any, ChartWidgetState> {
@@ -32,29 +42,44 @@ export default class ChartWidget extends BaseWidget<any, ChartWidgetState> {
   }
 
   override body() {
-    const showChart = this.state.data && this.state.xKey && this.state.yKey;
+    const showChart =
+      this.state.data &&
+      this.state.xKey &&
+      this.state.yKey &&
+      !this.state.onloading;
     return (
-      <div>
-        <div>
-          <Textarea
-            placeholder="Describe the data you want to see"
-            onSubmit={(ev, data) => {
-              this.askAI(data.value);
-            }}
-          />
-        </div>
-
-        {showChart && (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={this.state.data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={this.state.xKey!} />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey={this.state.yKey!} fill="#8884d8" />
-            </BarChart>
-          </ResponsiveContainer>
+      <div className="chart-content">
+        <Textarea
+          placeholder="Describe the data you want to see"
+          value={this.state.questionValue}
+          onSubmit={(_ev, data) => {
+            this.askAI(data.value);
+          }}
+        />
+        {showChart ? (
+          <>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={this.state.data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey={this.state.xKey!} />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey={this.state.yKey!} fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+            {this.state.sqlString && (
+              <pre>
+                <code>{this.state.sqlString}</code>
+              </pre>
+            )}
+          </>
+        ) : (
+          <CopilotProvider>
+            <LatencyWrapper>
+              <LatencyLoader header={"Generating chart"} />
+            </LatencyWrapper>
+          </CopilotProvider>
         )}
       </div>
     );
@@ -63,13 +88,17 @@ export default class ChartWidget extends BaseWidget<any, ChartWidgetState> {
   private async askAI(question: string) {
     try {
       if (question) {
-        this.setState({ onloading: true, data: [] });
+        this.setState({
+          onloading: true,
+          data: [],
+          xKey: undefined,
+          yKey: undefined,
+        });
         const resp = await aiPower(question);
         this.setState({
-          data: resp.data,
+          ...resp,
           onloading: false,
-          xKey: resp.x,
-          yKey: resp.y,
+          questionValue: "",
         });
       }
     } catch (e) {

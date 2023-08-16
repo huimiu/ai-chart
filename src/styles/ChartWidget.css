@@ -1,0 +1,9 @@
+.chart-content {
+    display: grid;
+    row-gap: var(--spacingVerticalL);
+    justify-items: center;
+}
+
+.chart-content div {
+    min-width: 60%;
+}

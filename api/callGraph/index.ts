@@ -145,6 +145,7 @@ async function handleRequest(
       const sqlContext = JSON.parse(aiResponse);
       return {
         queryResult: await queryDB(sqlContext.sql),
+        sqlString: sqlContext.sql,
         x: sqlContext.x,
         y: sqlContext.y,
       };
