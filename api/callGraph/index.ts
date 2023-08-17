@@ -39,7 +39,7 @@ type TeamsfxContext = { [key: string]: any };
 export default async function run(
   context: Context,
   req: HttpRequest,
-  teamsfxContext: TeamsfxContext
+  teamsfxContext: TeamsfxContext,
 ): Promise<Response> {
   context.log("HTTP trigger function processed a request.");
 
@@ -94,12 +94,7 @@ export default async function run(
 
   try {
     // Call the appropriate function based on the graphType and method.
-    const result = await handleRequest(
-      oboCredential,
-      graphType,
-      method,
-      reqData
-    );
+    const result = await handleRequest(oboCredential, graphType, method, reqData);
     res.body = { ...res.body, ...result };
   } catch (e) {
     context.log.error(e);
@@ -127,14 +122,14 @@ async function handleRequest(
   oboCredential: OnBehalfOfUserCredential,
   graphType: string,
   method: string,
-  reqData: any
+  reqData: any,
 ): Promise<any> {
   // Switch statement to handle different graphType and method combinations
   switch (`${graphType}:${method}`) {
     case "queryDB:GET": {
       return {
         queryResult: await queryDB(
-          "SELECT Top 10 ProductID, sum(OrderQty) as SaleCount FROM [SalesLT].[SalesOrderDetail] GROUP BY ProductID"
+          "SELECT Top 10 ProductID, sum(OrderQty) as SaleCount FROM [SalesLT].[SalesOrderDetail] GROUP BY ProductID",
         ),
         x: "ProductID",
         y: "SaleCount",
@@ -162,8 +157,30 @@ async function callOAI(body: string) {
     const completionReq = {
       messages: [
         {
-          content:
-            "You are a senior sql engineer, you are good at generating suitable and accurate sql statements based on the user's description. Now there is a requirement to generate sql statements, your mission is to complete this sql generation requirement.\n\n## Goal\nAnalyze and disassemble the user's needs, and provide accurate sql statements and related information.\n\n## Table Definition\n\t- The [SalesLT].[SalesOrderDetail] table is a sample table that contains information about the sales order details of a fictitious company called Adventure Works.\n\n## Column Definition\n\t- SalesOrderID: The unique identifier of the sales order header that this detail belongs to.\n\t- SalesOrderDetailID: The unique identifier of the sales order detail.\n\t- OrderQty: The quantity ordered for this product.\n\t- ProductID: The identifier of the product that was ordered.\n\t- UnitPrice: The selling price of a single unit of the product.\n\t- UnitPriceDiscount: The discount amount applied to the unit price, if any.\n\t- LineTotal: The total amount for this line item, calculated as OrderQty * (UnitPrice - UnitPriceDiscount).\n\t- rowguid: A globally unique identifier for the row.\n\t- ModifiedDate: The date and time when the row was last updated. The values are from January to June 2023, accurate to the day.\n\n## Constrains\n\t- Ensure that the code is free of syntax errors.\nGenerate based on user input, do not ask other information.",
+          content: `
+            You are a senior sql engineer, you are good at generating suitable and accurate sql statements based on the user's description. Now there is a requirement to generate sql statements, your mission is to complete this sql generation requirement.
+            
+            ## Goal
+            Analyze and disassemble the user's needs, and provide accurate sql statements and related information.
+            
+            ## Table Definition
+            - The [SalesLT].[SalesOrderDetail] table is a sample table that contains information about the sales order details of a fictitious company called Adventure Works.
+            
+            ## Column Definition
+              - SalesOrderID: The unique identifier of the sales order header that this detail belongs to.
+              - SalesOrderDetailID: The unique identifier of the sales order detail.
+              - OrderQty: The quantity ordered for this product.
+              - ProductID: The identifier of the product that was ordered.
+              - UnitPrice: The selling price of a single unit of the product.
+              - UnitPriceDiscount: The discount amount applied to the unit price, if any.
+              - LineTotal: The total amount for this line item, calculated as OrderQty * (UnitPrice - UnitPriceDiscount).
+              - rowguid: A globally unique identifier for the row.
+              - ModifiedDate: The date and time when the row was last updated. The values are from January to June 2023, accurate to the day.
+              
+            ## Constrains
+              - Ensure that the code is free of syntax errors.
+              - Generate based on user input, do not ask other information.
+            `,
           role: "system",
         },
         {
@@ -171,8 +188,11 @@ async function callOAI(body: string) {
           role: "user",
         },
         {
-          content:
-            '{\n  "sql": "SELECT Top 20 ProductID, sum(OrderQty) as SaleCount FROM [SalesLT].[SalesOrderDetail] GROUP BY ProductId",\n  "x": "ProductID",\n  "y": "SaleCount"\n}',
+          content: `{
+              "sql": "SELECT Top 20 ProductID, sum(OrderQty) as SaleCount FROM [SalesLT].[SalesOrderDetail] GROUP BY ProductId",
+              "x": "ProductID",
+              "y": "SaleCount"
+            }`,
           role: "assistant",
         },
         {
@@ -180,18 +200,23 @@ async function callOAI(body: string) {
           role: "user",
         },
         {
-          content:
-            '{\n  "sql": "SELECT Top 20 ProductID, sum(LineTotal) as SaleAmount FROM [SalesLT].[SalesOrderDetail] GROUP BY ProductID",\n  "x": "ProductID",\n  "y": "SaleAmount"\n}',
+          content: `{
+              "sql": "SELECT Top 10 ProductID, sum(LineTotal) as SaleAmount FROM [SalesLT].[SalesOrderDetail] GROUP BY ProductID",
+              "x": "ProductID",
+              "y": "SaleAmount"
+            }`,
           role: "assistant",
         },
         {
-          content:
-            "Statistics of the top 10 sales volume of each product in April.",
+          content: "Statistics of the top 10 sales volume of each product in April.",
           role: "user",
         },
         {
-          content:
-            '{\n  "sql": "SELECT ProductID, SUM(OrderQty) AS SalesQuantity FROM [SalesLT].[SalesOrderDetail] WHERE ModifiedDate BETWEEN \'2023-04-01\' AND \'2023-04-30\' GROUP BY ProductID",\n  "x": "ProductID",\n  "y": "SalesQuantity"\n}',
+          content: `{
+              "sql": "SELECT ProductID, SUM(OrderQty) AS SalesQuantity FROM [SalesLT].[SalesOrderDetail] WHERE ModifiedDate BETWEEN \'2023-04-01\' AND \'2023-04-30\' GROUP BY ProductID",
+              "x": "ProductID",
+              "y": "SalesQuantity"
+            }`,
           role: "assistant",
         },
         {
@@ -204,15 +229,15 @@ async function callOAI(body: string) {
     const authProvider = new ApiKeyProvider(
       "api-key",
       process.env.TEAMSFX_API_OAI_API_KEY,
-      ApiKeyLocation.Header
+      ApiKeyLocation.Header,
     );
     const apiClient: AxiosInstance = createApiClient(
       process.env.TEAMSFX_API_OAI_ENDPOINT,
-      authProvider
+      authProvider,
     );
     const resp = await apiClient.post(
       "/chat/completions?api-version=2023-07-01-preview",
-      completionReq
+      completionReq,
     );
     if (resp.status !== 200) {
       return {
