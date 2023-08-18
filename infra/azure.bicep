@@ -138,7 +138,7 @@ resource functionApp 'Microsoft.Web/sites@2021-02-01' = {
           value: teamsfxApiOaiApiKey
         }
         {
-          name: 'TEAMSFX_API_OAI_ENDPOINT'
+          name: 'OAI_ENDPOINT'
           value: teamsfxApiOaiEndpoint
         }
       ]

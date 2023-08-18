@@ -30,10 +30,10 @@
       "value": "${{TEAMS_APP_ID}}"
     },
     "teamsfxApiOaiApiKey": {
-      "value": "${{SECRET_TEAMSFX_API_OAI_API_KEY}}"
+      "value": "${{OAI_API_KEY}}"
     },
     "teamsfxApiOaiEndpoint": {
-      "value": "${{TEAMSFX_API_OAI_ENDPOINT}}"
+      "value": "${{OAI_ENDPOINT}}"
     }
   }
 }

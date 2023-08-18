@@ -11,18 +11,10 @@ import {
   YAxis,
 } from "recharts";
 
-import {
-  CopilotProvider,
-  LatencyCancel,
-  LatencyLoader,
-  LatencyWrapper,
-  useCopilotMode,
-} from "@fluentai/react-copilot";
-
-import { Textarea } from "@fluentai/react-copilot";
+import { CopilotProvider, LatencyLoader, LatencyWrapper, Textarea } from "@fluentai/react-copilot";
 import { BaseWidget } from "@microsoft/teamsfx-react";
 
-import { aiPower, queryDB } from "../services/chartService";
+import { aiCompletion, queryDB } from "../services/chartService";
 
 interface ChartWidgetState {
   onloading: boolean;
@@ -42,11 +34,7 @@ export default class ChartWidget extends BaseWidget<any, ChartWidgetState> {
   }
 
   override body() {
-    const showChart =
-      this.state.data &&
-      this.state.xKey &&
-      this.state.yKey &&
-      !this.state.onloading;
+    const showChart = this.state.data && this.state.xKey && this.state.yKey;
     return (
       <div className="chart-content">
         <Textarea
@@ -56,7 +44,13 @@ export default class ChartWidget extends BaseWidget<any, ChartWidgetState> {
             this.askAI(data.value);
           }}
         />
-        {showChart ? (
+        {this.state.onloading ? (
+          <CopilotProvider>
+            <LatencyWrapper>
+              <LatencyLoader header={"Generating chart"} />
+            </LatencyWrapper>
+          </CopilotProvider>
+        ) : showChart ? (
           <>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={this.state.data}>
@@ -74,13 +68,7 @@ export default class ChartWidget extends BaseWidget<any, ChartWidgetState> {
               </pre>
             )}
           </>
-        ) : (
-          <CopilotProvider>
-            <LatencyWrapper>
-              <LatencyLoader header={"Generating chart"} />
-            </LatencyWrapper>
-          </CopilotProvider>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -94,10 +82,9 @@ export default class ChartWidget extends BaseWidget<any, ChartWidgetState> {
           xKey: undefined,
           yKey: undefined,
         });
-        const resp = await aiPower(question);
+        const resp = await aiCompletion(question);
         this.setState({
           ...resp,
-          onloading: false,
           questionValue: "",
         });
       }

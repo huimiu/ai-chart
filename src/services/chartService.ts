@@ -3,12 +3,12 @@ import { callFunction } from "./callFunction";
 export async function queryDB(): Promise<any> {
   try {
     const respData = await callFunction("GET", "callGraph", {
-      graphType: "queryDB",
+      apiType: "database",
     });
     return {
       data: respData["queryResult"],
-      xKey: respData["x"],
-      yKey: respData["y"],
+      xKey: respData["xKey"],
+      yKey: respData["yKey"],
     };
   } catch (e) {
     console.error(e);
@@ -16,18 +16,18 @@ export async function queryDB(): Promise<any> {
   }
 }
 
-export async function aiPower(q?: string): Promise<any> {
+export async function aiCompletion(q?: string): Promise<any> {
   try {
     const respData = await callFunction(
       "POST",
       "callGraph",
-      { graphType: "aiPower" },
-      { question: q }
+      { apiType: "aiCompletion" },
+      { question: q },
     );
     return {
       data: respData["queryResult"],
-      xKey: respData["x"],
-      yKey: respData["y"],
+      xKey: respData["xKey"],
+      yKey: respData["yKey"],
       sqlString: respData["sqlString"],
     };
   } catch (e) {
