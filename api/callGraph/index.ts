@@ -7,7 +7,12 @@
 import "isomorphic-fetch";
 
 import { Context, HttpRequest } from "@azure/functions";
-import { ApiKeyLocation, ApiKeyProvider, AxiosInstance, createApiClient } from "@microsoft/teamsfx";
+import {
+  ApiKeyLocation,
+  ApiKeyProvider,
+  AxiosInstance,
+  createApiClient,
+} from "@microsoft/teamsfx";
 
 import config from "../config";
 import example from "../example.json";
@@ -39,7 +44,7 @@ type TeamsfxContext = { [key: string]: any };
 export default async function run(
   context: Context,
   req: HttpRequest,
-  teamsfxContext: TeamsfxContext,
+  teamsfxContext: TeamsfxContext
 ): Promise<Response> {
   context.log("HTTP trigger function processed a request.");
 
@@ -96,7 +101,7 @@ async function handleRequest(apiType: string, reqData: any): Promise<any> {
     case "database": {
       return {
         queryResult: await queryDB(
-          "SELECT Top 10 ProductID, sum(OrderQty) as SaleCount FROM [SalesLT].[SalesOrderDetail] GROUP BY ProductID",
+          "SELECT Top 10 ProductID, sum(OrderQty) as SaleCount FROM [SalesLT].[SalesOrderDetail] GROUP BY ProductID"
         ),
         xKey: "ProductID",
         yKey: "SaleCount",
@@ -167,8 +172,15 @@ async function sqlCompletion(body: string): Promise<string> {
  * @returns The response object from the OpenAI API.
  */
 async function callOAI(request: any) {
-  const authProvider = new ApiKeyProvider("api-key", config.oaiApiKey, ApiKeyLocation.Header);
-  const apiClient: AxiosInstance = createApiClient(config.oaiEndpoint, authProvider);
+  const authProvider = new ApiKeyProvider(
+    "api-key",
+    config.oaiApiKey,
+    ApiKeyLocation.Header
+  );
+  const apiClient: AxiosInstance = createApiClient(
+    config.oaiEndpoint,
+    authProvider
+  );
   const resp = await apiClient.post(config.chatCompletionUrl, request);
   if (resp.status !== 200) {
     throw new Error(`Failed to call OpenAI API. Status code: ${resp.status}`);
